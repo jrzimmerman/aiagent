@@ -14,14 +14,15 @@ def main():
 
     parser = argparse.ArgumentParser(description="Chatbot")
     parser.add_argument("user_prompt", type=str, help="User prompt")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
 
     client = genai.Client(api_key=api_key)
     messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
-    generate_content(client, messages)
+    generate_content(client, messages, args)
 
 
-def generate_content(client, messages):
+def generate_content(client, messages, args):
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=messages,
@@ -30,8 +31,10 @@ def generate_content(client, messages):
     if not response.usage_metadata:
         raise RuntimeError("Gemini API response appears to be malformed")
 
-    print("Prompt tokens:", response.usage_metadata.prompt_token_count)
-    print("Response tokens:", response.usage_metadata.candidates_token_count)
+    if args.verbose:
+        print("User prompt:", args.user_prompt)
+        print("Prompt tokens:", response.usage_metadata.prompt_token_count)
+        print("Response tokens:", response.usage_metadata.candidates_token_count)
     print("Response:")
     print(response.text)
 

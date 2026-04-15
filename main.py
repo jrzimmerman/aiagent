@@ -1,8 +1,9 @@
+import argparse
 import os
 
 from dotenv import load_dotenv
 from google import genai
-import argparse
+from google.genai import types
 
 
 def main():
@@ -16,9 +17,14 @@ def main():
     args = parser.parse_args()
 
     client = genai.Client(api_key=api_key)
+    messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
+    generate_content(client, messages)
+
+
+def generate_content(client, messages):
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=args.user_prompt,
+        contents=messages,
     )
 
     if not response.usage_metadata:

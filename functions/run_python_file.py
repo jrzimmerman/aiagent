@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+
 def run_python_file(working_directory, file_path, args=None):
     try:
         working_dir_abs = os.path.abspath(working_directory)
@@ -17,17 +18,19 @@ def run_python_file(working_directory, file_path, args=None):
         command = ["python", target_file]
         if args:
             command.extend(args)
-        result = subprocess.run(command, cwd=working_dir_abs, capture_output=True, text=True, timeout=30)
-        output = ""
+        result = subprocess.run(
+            command, cwd=working_dir_abs, capture_output=True, text=True, timeout=30
+        )
+        output = []
         if result.returncode != 0:
-            output += f"Process exited with code {result.returncode}"
+            output.append(f"Process exited with code {result.returncode}")
         if result.stdout is None and result.stderr is None:
-            output += "No output produced"
+            output.append("No output produced")
         if result.stdout:
-            output += f"STDOUT:{result.stdout}"
+            output.append(f"STDOUT:{result.stdout}")
         if result.stderr:
-            output += f"STDERR:{result.stderr}"
-        return output
+            output.append(f"STDERR:{result.stderr}")
+        return "\n".join(output)
 
     except Exception as e:
         return f"Error: executing Python file: {e}"

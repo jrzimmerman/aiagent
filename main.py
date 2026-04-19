@@ -22,10 +22,10 @@ def main():
 
     client = genai.Client(api_key=api_key)
     messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
-    generate_content(client, messages, args)
+    generate_content(client, messages, args.verbose)
 
 
-def generate_content(client, messages, args):
+def generate_content(client, messages, verbose):
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=messages,
@@ -34,31 +34,30 @@ def generate_content(client, messages, args):
             system_instruction=system_prompt,
         ),
     )
-
     if not response.usage_metadata:
         raise RuntimeError("Gemini API response appears to be malformed")
 
-    if args.verbose:
-        print("User prompt:", args.user_prompt)
+    if verbose:
         print("Prompt tokens:", response.usage_metadata.prompt_token_count)
         print("Response tokens:", response.usage_metadata.candidates_token_count)
 
-    if response.function_calls is not None and len(response.function_calls) > 0:
-        function_results = []
-        for function_call in response.function_calls:
-            function_call_result = call_function(function_call, args.verbose)
-            if len(function_call_result.parts) == 0:
-                raise Exception("Function call response has no parts")
-            if function_call_result.parts[0].function_response.response is None:
-                raise Exception(
-                    "Function call response part has no function response field"
-                )
-            function_results.append(function_call_result.parts[0])
-            if args.verbose:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
-    else:
+    if not response.function_calls:
         print("Response:")
         print(response.text)
+        return
+
+    function_responses = []
+    for function_call in response.function_calls:
+        result = call_function(function_call, verbose)
+        if (
+            not result.parts
+            or not result.parts[0].function_response
+            or not result.parts[0].function_response.response
+        ):
+            raise RuntimeError(f"Empty function response for {function_call.name}")
+        if verbose:
+            print(f"-> {result.parts[0].function_response.response}")
+        function_responses.append(result.parts[0])
 
 
 if __name__ == "__main__":
